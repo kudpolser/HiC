@@ -80,6 +80,23 @@ scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:~/hic/*png .
 ![GitHub Logo](hic_track.png)
 ![GitHub Logo](hic_track2.png)
 
+На каждом участке нашлось по шесть ТАДов. Хорошо видны ближние взаимодействия. Иные структуры, например, петли я не заметила.
+
 ### Взаимосвязь между границами ТАДов и экспрессией.
+Скачаем геном дрозофилы в формате genbank: GCF_000001215.4_Release_6_plus_ISO1_MT_genomic.gbff
+Скопируем файл с экспрессией:
+```
+scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:~/hic/BG3_genes.txt .
+```
 ### Компартменты.
+Скопируем скрипт на компьютер:
+```
+scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:/home/kononkova/hic_data_hse/compartments.py .
+```
 ### Получение Hi-C карт из fastq-файлов.
+```
+wget http://hgdownload.soe.ucsc.edu/goldenPath/dm3/bigZips/dm3.chrom.sizes ../
+wget http://hgdownload.soe.ucsc.edu/goldenPath/dm3/bigZips/dm3.fa.gz ../
+bwa index dm3.fa.gz
+```
+![GitHub Logo](distiller_res.png)
