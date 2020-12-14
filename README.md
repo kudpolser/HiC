@@ -15,7 +15,24 @@ $ hicFindTADs -m /home/kononkova/hic_data_hse/lib_1_and_2.dm3.mapq_30.1000.mcool
 
 $ hicFindTADs -m /home/kononkova/hic_data_hse/lib_1_and_2.dm3.mapq_30.1000.mcool::/resolutions/5000 --outPrefix TADs_n --correctForMultipleTesting fdr --chromosomes chr2L chr2R chr3L chr3R chrX --minDepth 15000 --maxDepth 50000
 ```
-??? Средний размер ТАДов ???
+Посчитаем в питоне средний размеров ТАДов:
+```
+content = []
+with open("TADs_n_boundaries.bed")as f:
+    for line in f:
+        content.append(line.strip().split())
+        
+n = []
+for i in range(len(content)):
+    n.append(int(content[i][2]) - int(content[i][1]))
+
+sum(n)/len(n)
+```
+Аналогичные вычисления сделаем для файла TADs_boundaries.bed. Получим:
+- TADs_n_boundaries.bed: 5056
+- TADs_boundaries.bed: 10325
+
+??? Сравните полученную цифру с публичными данными (ориентироваться нужно на данные похожего разрешения). Сделайте выводы. ???
 
 ### Визуализация.
 
