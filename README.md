@@ -88,15 +88,34 @@ scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:~/hic/*png .
 ```
 scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:~/hic/BG3_genes.txt .
 ```
+
+??? Найдите разметку генов Drosophila (в любой открытой базе данных) и посчитайте, какая доля генов приходится на границы ТАДов (граничный бин из файла ...boundaries.bed ±1 бин), и какая на ТАДы (не включая границы и приграничные бины). Нормируйте полученное число соответственно на общую протяженности границ (с учетом приграничных бинов) либо общую протяженность ТАДов (не считая приграничные бины). Скопируйте файл /home/kononkova/hic_data_hse/BG3_genes.txt, отберите 400 генов с наиболее высокой экспрессией. Получите координаты стартов генов (например, в Ensembl). Посчитайте для этих то же самое. Вывод. ???
+
+
 ### Компартменты.
-Скопируем скрипт на компьютер:
-```
-scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:/home/kononkova/hic_data_hse/compartments.py .
-```
+Заупстим скрипт compartments.py на двух хромосомах, исравив пути к файлам.
+chrX:
+![GitHub Logo](saddle_plot_chrX.png)
+chr2L:
+![GitHub Logo](saddle_plot_chr2L.png)
+
 ### Получение Hi-C карт из fastq-файлов.
+Скачаем нужные файлы из базы и сделаем индексы по геному:
 ```
 wget http://hgdownload.soe.ucsc.edu/goldenPath/dm3/bigZips/dm3.chrom.sizes ../
 wget http://hgdownload.soe.ucsc.edu/goldenPath/dm3/bigZips/dm3.fa.gz ../
 bwa index dm3.fa.gz
 ```
+Укажем в файле config/local.config путь для временной директории и запустим дистиллер (Файл project.yml с параметрами для запуска лежит в этом же репозитории):
+```
+nextflow distiller.nf -params-file ./project.yml
+```
+Скриншот работы программы:
 ![GitHub Logo](distiller_res.png)
+
+```
+cooler info results/coolers_library_group/libraries_1_and_2.dm3.mapq_30.1000.cool
+cooler info results/coolers_library_group/libraries_1_and_2.dm3.no_filter.1000.cool
+```
+
+Предположу, что число контактов печатается с ключом sum. Тогда для отфильтрованный данных мы получили 1022726 контактов, а для нефильтрованных 1055863, что больше. Логично, что фильтрование на качество картирования усеньшило число найденных контаков. 
