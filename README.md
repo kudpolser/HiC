@@ -7,7 +7,27 @@ $ hicrep /home/kononkova/hic_data_hse/Kc167_rep1.dm3.mapq_30.1000.mcool /home/ko
 ```
 Посчитаем корреляцию для 1,3,5,7,9,12 хромосом, просто скопировав значения в excel. Для нервной ткани получим 8,50E-01, а для эмбриональной 8,37E-01. Для нервной ткани корреляция чуть выше, она стабильнее эмбриональной.
 
-??? Постройте дендрограмму (любым способом) по средним SCC и сделайте выводы. ???
+Построим дендрограмму для нервной и аналогично для эмбриональной ткани.
+```
+from scipy.cluster import hierarchy
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+ytdist = np.loadtxt('output_kc.txt')
+ytdist = ytdist[[0,2,4,6,8,11]]
+ytdist = abs(ytdist - ytdist.mean())
+Z = hierarchy.linkage(ytdist, 'single')
+plt.figure()
+dn = hierarchy.dendrogram(Z)
+plt.savefig('den_kc.png')
+```
+den_kc:
+![GitHub Logo](den_kc.png)
+den_bg:
+![GitHub Logo](den_bg.png)
+
+Расстояние между хромосомами в нервной ткани меньше, чем в эмбриональной.
 
 ### TADs calling.
 ```
@@ -18,7 +38,7 @@ $ hicFindTADs -m /home/kononkova/hic_data_hse/lib_1_and_2.dm3.mapq_30.1000.mcool
 Посчитаем в питоне средний размеров ТАДов:
 ```
 content = []
-with open("TADs_n_boundaries.bed")as f:
+with open("TADs_n_domains.bed")as f:
     for line in f:
         content.append(line.strip().split())
         
@@ -29,10 +49,10 @@ for i in range(len(content)):
 sum(n)/len(n)
 ```
 Аналогичные вычисления сделаем для файла TADs_boundaries.bed. Получим:
-- TADs_n_boundaries.bed: 5056
-- TADs_boundaries.bed: 10325
+- 5000 resolution: 103630 (1130 TADs)
+- 10000 resolution: 224575 (518 TADs)
 
-??? Сравните полученную цифру с публичными данными (ориентироваться нужно на данные похожего разрешения). Сделайте выводы. ???
+Большее разрешение дает меньший размер тадов. В качестве сравнения с публичными данными нашла статью "Principles of genome folding into topologically associating domains" авторов Quentin Szabo, Frédéric Bantignies, и Giacomo Cavalli. В ней пишут "originally, Hi-Cs in Drosophila revealed approximately 1300 TADs with an average size of nearly 100 kb, but recent studies using higher map resolution showed a finer partitioning into >2000 or >4000 TADs, where TADs and inter-TAD regions can be subdivided into smaller domains with a median size of few tens of kilobases". В целом разрешение в 5000 попадает под описание того, что используется обычно. В данной статье были изучены данные с еще большим разрешеним, а 10000 вероятно считают уже слишком низким разрешением. 
 
 ### Визуализация.
 
@@ -89,14 +109,63 @@ scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:~/hic/*png .
 scp -r -P 9022 polina_kudryavtseva@mg.uncb.iitp.ru:~/hic/BG3_genes.txt .
 ```
 
-??? Найдите разметку генов Drosophila (в любой открытой базе данных) и посчитайте, какая доля генов приходится на границы ТАДов (граничный бин из файла ...boundaries.bed ±1 бин), и какая на ТАДы (не включая границы и приграничные бины). Нормируйте полученное число соответственно на общую протяженности границ (с учетом приграничных бинов) либо общую протяженность ТАДов (не считая приграничные бины). Скопируйте файл /home/kononkova/hic_data_hse/BG3_genes.txt, отберите 400 генов с наиболее высокой экспрессией. Получите координаты стартов генов (например, в Ensembl). Посчитайте для этих то же самое. Вывод. ???
+```
+bins = []
+with open("TADs_boundaries.bed") as f:
+    for line in f:
+        bins.append(line.strip().split())
 
+def n_tads_gene(df, name):
+    n_b = 0
+    n_t = 0
+    
+    start = 22235000
+    end = 0
+    
+    for i in range(len(df.features)):
+        for j in range(len(bins)):
+            if bins[j][0] == name:
+                
+                if start > int(bins[j][1]): start = int(bins[j][1]) 
+                if end < int(bins[j][2]): end = int(bins[j][2])
+                
+                if int(bins[j][1]) <= int(df.features[i].location.start) and \
+                int(bins[j][2]) >= int(df.features[i].location.start) and (j < 2 or j > len(bins) - 2):
+                    n_b += 1
+                elif int(bins[j][1]) <= int(df.features[i].location.start) and \
+                int(bins[j][2]) >= int(df.features[i].location.start):
+                    n_t += 1             
+                    
+    return n_b/(end - start), n_t/(end - start)
+```
+
+chrX: 0.0, 3.072043497961033e-05
+chr2L: 1.9034971226206287e-06, 7.507746790615317e-05
+chr2R: 0.0, 2.6320987654320987e-05
+chr3L: 0.0, 4.408958938199917e-05
+chr3R: 0.0, 3.14327485380117e-05
+
+Считаем файл с генами и выберем 40 с наивысшей экспрессией.
+```
+genes = []
+with open("BG3_genes.txt")as f:
+    for line in f:
+        genes.append(line.strip().split())
+        
+genes = sorted(genes, key=lambda x: x[1])
+genes = genes[-40:]
+```
+
+Я перевела fbgn в gene Symbols с помощью https://www.biotools.fr/drosophila/fbgn_converter, но почему то не нашла ни одного из топ 40 генов в моем варианте сборки. Но в целом, насколько я поняла, идея задания была в том, чтобы убедиться, что высоко экспрессирующиеся гены находятся на границе тадов. Поэтому значения для топ 40 я бы получила выше.
 
 ### Компартменты.
 Заупстим скрипт compartments.py на двух хромосомах, исравив пути к файлам.
 chrX:
+
 ![GitHub Logo](saddle_plot_chrX.png)
+
 chr2L:
+
 ![GitHub Logo](saddle_plot_chr2L.png)
 
 ### Получение Hi-C карт из fastq-файлов.
